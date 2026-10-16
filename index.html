@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>晶体结构 · 晶面晶向 (移动版)</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: "Microsoft YaHei", "苹方", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #ffffff;
+      touch-action: pan-x pan-y pinch-zoom; /* 允许手势操作 */
+    }
+    #info {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #222;
+      padding: 10px 14px;
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      pointer-events: none;
+      z-index: 15;
+      font-size: 0.8rem;
+    }
+    #info h2 {
+      margin: 0 0 4px;
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+    #info p {
+      margin: 0;
+      font-size: 0.7rem;
+      opacity: 0.8;
+    }
+
+    /* 右侧功能面板 */
+    .side-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 270px;
+      max-width: 85vw;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(16px);
+      box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 16px;
+      gap: 20px;
+      overflow-y: auto;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateX(0);
+      border-left: 1px solid rgba(0,0,0,0.1);
+    }
+    .side-panel.hidden {
+      transform: translateX(100%);
+    }
+
+    /* 面板内部滚动条美化 */
+    .side-panel::-webkit-scrollbar {
+      width: 4px;
+    }
+    .side-panel::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+    }
+
+    /* 控制组样式 */
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .control-group label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      color: #555;
+    }
+    select, input {
+      background: rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,0.3);
+      border-radius: 8px;
+      padding: 10px 8px;
+      color: #111;
+      font-size: 0.9rem;
+      outline: none;
+      transition: 0.2s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    select {
+      cursor: pointer;
+    }
+    input:focus, select:focus {
+      border-color: #5aa9e6;
+      background: rgba(0,0,0,0.08);
+      box-shadow: 0 0 8px rgba(90,169,230,0.4);
+    }
+    .index-row {
+      display: flex;
+      gap: 6px;
+    }
+    .index-row input {
+      flex: 1;
+      min-width: 0;
+    }
+    button {
+      background: #5aa9e6;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      color: white;
+      font-weight: bold;
+      font-size: 0.9rem;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 4px 10px rgba(90,169,230,0.3);
+      width: 100%;
+      margin-top: 5px;
+    }
+    button:hover {
+      background: #4090d0;
+    }
+    button:active {
+      transform: scale(0.97);
+    }
+    .view-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 5px;
+    }
+    .view-btn {
+      background: rgba(0,0,0,0.05);
+      border: 1px solid rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #333;
+      font-weight: 600;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: 0.2s;
+      flex: 1 1 auto;
+      white-space: nowrap;
+    }
+    .view-btn.active {
+      background: #5aa9e6;
+      color: white;
+      border-color: #5aa9e6;
+    }
+    .disabled-input {
+      opacity: 0.5;
+      pointer-events: none;
+      background: rgba(0,0,0,0.02);
+    }
+
+    /* 切换面板按钮 */
+    .toggle-panel-btn {
+      position: fixed;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 25;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(0,0,0,0.2);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #333;
+      transition: all 0.3s;
+      padding: 0;
+    }
+    .toggle-panel-btn.panel-hidden {
+      right: 12px;
+    }
+    .toggle-panel-btn span {
+      transition: transform 0.3s;
+    }
+    .side-panel.hidden ~ .toggle-panel-btn span {
+      transform: rotate(180deg);
+    }
+
+    /* 移动端小屏适配 */
+    @media (max-width: 600px) {
+      .side-panel {
+        width: 250px;
+        padding: 15px 12px;
+        gap: 15px;
+      }
+      #info {
+        top: 8px;
+        left: 8px;
+        padding: 8px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <h2>🧪 晶体结构 · 晶面 & 晶向</h2>
+    <p>拖动旋转 | 缩放 | 平移<br>坐标轴：<span style="color:#ff5555">X(红)</span> <span style="color:#55aa55">Y(绿)</span> <span style="color:#5555ff">Z(蓝)</span></p>
+  </div>
+
+  <!-- 右侧功能面板 -->
+  <div class="side-panel" id="sidePanel">
+    <div class="control-group">
+      <label>晶体结构</label>
+      <select id="structureSelect">
+        <option value="SC">简单立方 SC</option>
+        <option value="BCC">体心立方 BCC</option>
+        <option value="FCC" selected>面心立方 FCC</option>
+        <option value="HCP">六方密堆积 HCP</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>晶面指数 (h k i l)</label>
+      <div class="index-row">
+        <input id="planeH" type="number" value="1" step="1" placeholder="h">
+        <input id="planeK" type="number" value="1" step="1" placeholder="k">
+        <input id="planeI" type="number" value="-1" step="1" placeholder="i" disabled>
+        <input id="planeL" type="number" value="0" step="1" placeholder="l">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>晶向指数 [U V T W]</label>
+      <div class="index-row">
+        <input id="dirU" type="number" value="1" step="1" placeholder="U">
+        <input id="dirV" type="number" value="1" step="1" placeholder="V">
+        <input id="dirT" type="number" value="-1" step="1" placeholder="T" disabled>
+        <input id="dirW" type="number" value="1" step="1" placeholder="W">
+      </div>
+    </div>
+
+    <button id="updateBtn">更新演示</button>
+
+    <div class="view-buttons">
+      <button class="view-btn active" data-view="default">默认</button>
+      <button class="view-btn" data-view="xoy">XOY</button>
+      <button class="view-btn" data-view="xoz">XOZ</button>
+      <button class="view-btn" data-view="yoz">YOZ</button>
+    </div>
+  </div>
+
+  <!-- 面板切换按钮 -->
+  <button class="toggle-panel-btn" id="togglePanelBtn">
+    <span>◀</span>
+  </button>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ---------- 场景初始化 ----------
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 20);
+    camera.position.set(2.6, 2.0, 3.8);
+    camera.lookAt(0.5, 0.5, 0.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0.5, 0.5, 0.5);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.update();
+
+    // 光照
+    const ambientLight = new THREE.AmbientLight(0x888888);
+    scene.add(ambientLight);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.9);
+    dirLight1.position.set(1, 2, 1);
+    scene.add(dirLight1);
+    const dirLight2 = new THREE.DirectionalLight(0xccddff, 0.7);
+    dirLight2.position.set(-1, 0.5, -0.5);
+    scene.add(dirLight2);
+
+    // ---------- 全局组 ----------
+    const cellGroup = new THREE.Group();
+    const atomGroup = new THREE.Group();
+    const planeGroup = new THREE.Group();
+    const dirGroup = new THREE.Group();
+    const axisGroup = new THREE.Group();
+    scene.add(cellGroup);
+    scene.add(atomGroup);
+    scene.add(planeGroup);
+    scene.add(dirGroup);
+    scene.add(axisGroup);
+
+    // ---------- 坐标轴 ----------
+    function createAxis() {
+      axisGroup.clear();
+      const length = 1.25;
+      const arrowX = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), length, 0xff5555, 0.12, 0.08);
+      const arrowY = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,0), length, 0x55aa55, 0.12, 0.08);
+      const arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,0), length, 0x5555ff, 0.12, 0.08);
+      axisGroup.add(arrowX); axisGroup.add(arrowY); axisGroup.add(arrowZ);
+      function makeLabel(text, pos, color) {
+        const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = color; ctx.font = 'bold 40px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(text, 32, 32);
+        const texture = new THREE.CanvasTexture(canvas); texture.minFilter = THREE.LinearFilter;
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false }));
+        sprite.position.copy(pos); sprite.scale.set(0.25,0.25,1);
+        return sprite;
+      }
+      axisGroup.add(makeLabel('X', new THREE.Vector3(length+0.15, -0.1, 0), '#cc3333'));
+      axisGroup.add(makeLabel('Y', new THREE.Vector3(0, length+0.15, 0), '#33aa33'));
+      axisGroup.add(makeLabel('Z', new THREE.Vector3(0, -0.1, length+0.15), '#3333cc'));
+    }
+    createAxis();
+
+    // ---------- 晶体结构定义 ----------
+    const cOverA = 1.633;
+    const cubeVertices = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1],[1,1,1]];
+    const cubeEdges = [[0,1],[0,2],[0,3],[1,4],[1,5],[2,4],[2,6],[3,5],[3,6],[4,7],[5,7],[6,7]];
+    function getHexPrismVertices() {
+      const v = [];
+      for (let i=0; i<6; i++) {
+        const a = i*Math.PI/3;
+        v.push([Math.cos(a), Math.sin(a), 0], [Math.cos(a), Math.sin(a), cOverA]);
+      }
+      return v;
+    }
+    function getHexPrismEdges() {
+      const e = [];
+      for (let i=0; i<6; i++) {
+        e.push([2*i, 2*((i+1)%6)], [2*i+1, 2*((i+1)%6)+1], [2*i, 2*i+1]);
+      }
+      return e;
+    }
+
+    const structures = {
+      SC: {
+        name:'SC', type:'cubic', basis:[[0,0,0]],
+        cellEdges:()=>({vertices:cubeVertices, edges:cubeEdges}),
+        isInside:p=>p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1&&p.z>=0&&p.z<=1
+      },
+      BCC: {
+        name:'BCC', type:'cubic', basis:[[0,0,0],[0.5,0.5,0.5]],
+        cellEdges:()=>({vertices:cubeVertices, edges:cubeEdges}),
+        isInside:p=>p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1&&p.z>=0&&p.z<=1
+      },
+      FCC: {
+        name:'FCC', type:'cubic', basis:[[0,0,0],[0.5,0.5,0],[0.5,0,0.5],[0,0.5,0.5]],
+        cellEdges:()=>({vertices:cubeVertices, edges:cubeEdges}),
+        isInside:p=>p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1&&p.z>=0&&p.z<=1
+      },
+      HCP: {
+        name:'HCP', type:'hexagonal', basis:[[0,0,0],[1/3,2/3,0.5]],
+        M:new THREE.Matrix3().set(1,-0.5,0, 0,Math.sqrt(3)/2,0, 0,0,cOverA),
+        invM:new THREE.Matrix3().set(1,1/Math.sqrt(3),0, 0,2/Math.sqrt(3),0, 0,0,1/cOverA),
+        cellEdges:()=>({vertices:getHexPrismVertices(), edges:getHexPrismEdges()}),
+        isInside:p=>{
+          if(p.z<0||p.z>cOverA) return false;
+          const f = cartToFrac(p, structures.HCP);
+          return f.x>=0 && f.y>=0 && f.x+f.y<=1 && f.z>=0 && f.z<=1;
+        }
+      }
+    };
+
+    function fracToCart(frac, struct) {
+      if(struct.type==='cubic') return new THREE.Vector3(frac[0],frac[1],frac[2]);
+      return new THREE.Vector3(frac[0],frac[1],frac[2]).applyMatrix3(struct.M);
+    }
+    function cartToFrac(cart, struct) {
+      if(struct.type==='cubic') return cart.clone();
+      return cart.clone().applyMatrix3(struct.invM);
+    }
+
+    // ---------- 绘制 ----------
+    function drawCellFrame(struct) {
+      cellGroup.clear();
+      const {vertices, edges} = struct.cellEdges();
+      const pts = [];
+      edges.forEach(([i,j]) => {
+        pts.push(new THREE.Vector3(vertices[i][0],vertices[i][1],vertices[i][2]));
+        pts.push(new THREE.Vector3(vertices[j][0],vertices[j][1],vertices[j][2]));
+      });
+      cellGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0x336699})));
+    }
+
+    function drawAtoms(struct) {
+      atomGroup.clear();
+      const g = new THREE.SphereGeometry(0.1,32,16);
+      struct.basis.forEach(pos => {
+        const cart = fracToCart(pos, struct);
+        const mat = new THREE.MeshPhongMaterial({color:0x3399ff, emissive:0x001122, shininess:30, transparent:true, opacity:0.9});
+        const sphere = new THREE.Mesh(g, mat);
+        sphere.position.copy(cart);
+        sphere.userData = {originalColor:0x3399ff};
+        atomGroup.add(sphere);
+      });
+    }
+
+    // 平面求交
+    function intersectPlaneCubic(h,k,l) {
+      const v = cubeVertices, e = cubeEdges;
+      let d=1;
+      const vals = v.map(p=>h*p[0]+k*p[1]+l*p[2]);
+      const min=Math.min(...vals), max=Math.max(...vals);
+      if(d<min||d>max) for(let a=2;a<=5;a++){if(a>=min&&a<=max){d=a;break;} if(-a>=min&&-a<=max){d=-a;break;}}
+      const pts=[];
+      e.forEach(([i,j])=>{
+        const p0=v[i],p1=v[j], v0=h*p0[0]+k*p0[1]+l*p0[2], v1=h*p1[0]+k*p1[1]+l*p1[2];
+        if(Math.abs(v1-v0)<1e-9)return;
+        const t=(d-v0)/(v1-v0);
+        if(t>=0&&t<=1) pts.push([p0[0]+t*(p1[0]-p0[0]), p0[1]+t*(p1[1]-p0[1]), p0[2]+t*(p1[2]-p0[2])]);
+      });
+      if(pts.length<3)return null;
+      const c=[0,0,0]; pts.forEach(p=>{c[0]+=p[0];c[1]+=p[1];c[2]+=p[2];}); c[0]/=pts.length;c[1]/=pts.length;c[2]/=pts.length;
+      const n=new THREE.Vector3(h,k,l).normalize();
+      pts.sort((a,b)=>{
+        const va=new THREE.Vector3(a[0]-c[0],a[1]-c[1],a[2]-c[2]), vb=new THREE.Vector3(b[0]-c[0],b[1]-c[1],b[2]-c[2]);
+        return Math.atan2(va.clone().cross(n).length()*Math.sign(va.clone().cross(n).dot(va)), va.dot(va)) - Math.atan2(vb.clone().cross(n).length()*Math.sign(vb.clone().cross(n).dot(vb)), vb.dot(vb));
+      });
+      return {polygon:pts, d, coeffs:{A:h,B:k,C:l,D:d}};
+    }
+
+    function intersectPlaneHex(h,k,l,struct) {
+      const verts=getHexPrismVertices(), edges=getHexPrismEdges();
+      let d=1;
+      const vals=verts.map(v=>{const f=cartToFrac(new THREE.Vector3(v[0],v[1],v[2]),struct); return h*f.x+k*f.y+l*f.z;});
+      const min=Math.min(...vals),max=Math.max(...vals);
+      if(d<min||d>max) for(let a=2;a<=5;a++){if(a>=min&&a<=max){d=a;break;} if(-a>=min&&-a<=max){d=-a;break;}}
+      const pts=[];
+      edges.forEach(([i,j])=>{
+        const p0=verts[i],p1=verts[j];
+        const f0=cartToFrac(new THREE.Vector3(p0[0],p0[1],p0[2]),struct), f1=cartToFrac(new THREE.Vector3(p1[0],p1[1],p1[2]),struct);
+        const v0=h*f0.x+k*f0.y+l*f0.z, v1=h*f1.x+k*f1.y+l*f1.z;
+        if(Math.abs(v1-v0)<1e-9)return;
+        const t=(d-v0)/(v1-v0);
+        if(t>=0&&t<=1) pts.push([p0[0]+t*(p1[0]-p0[0]),p0[1]+t*(p1[1]-p0[1]),p0[2]+t*(p1[2]-p0[2])]);
+      });
+      if(pts.length<3)return null;
+      const inv=struct.invM.elements;
+      const A=h*inv[0]+k*inv[3]+l*inv[6], B=h*inv[1]+k*inv[4]+l*inv[7], C=h*inv[2]+k*inv[5]+l*inv[8];
+      const n=new THREE.Vector3(A,B,C).normalize();
+      const center=new THREE.Vector3(0,0,0); pts.forEach(p=>center.add(new THREE.Vector3(p[0],p[1],p[2]))); center.divideScalar(pts.length);
+      pts.sort((a,b)=>{
+        const va=new THREE.Vector3(a[0]-center.x,a[1]-center.y,a[2]-center.z), vb=new THREE.Vector3(b[0]-center.x,b[1]-center.y,b[2]-center.z);
+        return Math.atan2(new THREE.Vector3().crossVectors(va,vb).dot(n), va.dot(vb));
+      });
+      return {polygon:pts, d, coeffs:{A,B,C,D:d}};
+    }
+
+    function updatePlane(h,k,l,struct) {
+      planeGroup.clear();
+      const res = struct.type==='cubic'? intersectPlaneCubic(h,k,l) : intersectPlaneHex(h,k,l,struct);
+      if(!res) return;
+      const {polygon, coeffs} = res;
+      const verts=[]; polygon.forEach(p=>verts.push(p[0],p[1],p[2]));
+      const idxs=[]; for(let i=1;i<polygon.length-1;i++) idxs.push(0,i,i+1);
+      const geom=new THREE.BufferGeometry();
+      geom.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+      geom.setIndex(idxs); geom.computeVertexNormals();
+      const mat=new THREE.MeshPhongMaterial({color:0xff8800, side:THREE.DoubleSide, transparent:true, opacity:0.4, emissive:0x331100, depthWrite:false});
+      planeGroup.add(new THREE.Mesh(geom,mat));
+      const {A,B,C,D}=coeffs; const norm=Math.sqrt(A*A+B*B+C*C); const tol=0.06;
+      atomGroup.children.forEach(s=>{
+        const dist=Math.abs(A*s.position.x+B*s.position.y+C*s.position.z-D)/norm;
+        if(dist<tol){ s.material.color.setHex(0xff5500); s.material.emissive.setHex(0x331100); s.scale.set(1.5,1.5,1.5); }
+        else { s.material.color.setHex(s.userData.originalColor||0x3399ff); s.material.emissive.setHex(0x001122); s.scale.set(1,1,1); }
+      });
+    }
+
+    function updateDirection(u,v,w,struct) {
+      dirGroup.clear();
+      let dirCart;
+      if(struct.type==='cubic') dirCart=new THREE.Vector3(u,v,w);
+      else { const T=-(u+v); dirCart=new THREE.Vector3(1.5*u, (u+2*v)*Math.sqrt(3)/2, w*cOverA); }
+      if(dirCart.length()<1e-9)return;
+      const origin=new THREE.Vector3(0,0,0), dir=dirCart.clone().normalize();
+      let tMax=10;
+      for(let step=0.01;step<5;step+=0.02) if(!struct.isInside(origin.clone().add(dir.clone().multiplyScalar(step)))) { tMax=step-0.01; break; }
+      if(tMax<0.01)return;
+      dirGroup.add(new THREE.ArrowHelper(dir, origin, tMax, 0x22aa44, 0.15, 0.09));
+      const tol=0.09;
+      atomGroup.children.forEach(s=>{
+        const vec=s.position.clone().sub(origin), proj=vec.dot(dir);
+        if(proj<-0.05||proj>tMax+0.05)return;
+        if(s.position.distanceTo(origin.clone().add(dir.clone().multiplyScalar(proj)))<tol){
+          s.material.color.setHex(0x22aa44); s.material.emissive.setHex(0x002211); s.scale.set(1.5,1.5,1.5);
+        }
+      });
+    }
+
+    // 视图切换
+    function animateCamera(targetPos, targetLook) {
+      const startPos=camera.position.clone(), startTarget=controls.target.clone();
+      const endPos=targetPos.clone(), endTarget=targetLook.clone();
+      const startTime=performance.now();
+      function step(now){
+        const t=Math.min((now-startTime)/400, 1);
+        const ease=t*(2-t);
+        camera.position.lerpVectors(startPos, endPos, ease);
+        controls.target.lerpVectors(startTarget, endTarget, ease);
+        controls.update();
+        if(t<1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+    function setView(viewName) {
+      const c=new THREE.Vector3(0.5,0.5,0.5);
+      let pos;
+      if(viewName==='xoy') pos=new THREE.Vector3(0.5,0.5,2.8);
+      else if(viewName==='xoz') pos=new THREE.Vector3(0.5,2.8,0.5);
+      else if(viewName==='yoz') pos=new THREE.Vector3(2.8,0.5,0.5);
+      else pos=new THREE.Vector3(2.6,2.0,3.8);
+      animateCamera(pos, c);
+      document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelector(`.view-btn[data-view="${viewName}"]`)?.classList.add('active');
+    }
+
+    // ---------- 面板切换逻辑 ----------
+    const sidePanel = document.getElementById('sidePanel');
+    const toggleBtn = document.getElementById('togglePanelBtn');
+    toggleBtn.addEventListener('click', ()=>{
+      sidePanel.classList.toggle('hidden');
+      // 按钮箭头方向变化
+      if(sidePanel.classList.contains('hidden')) {
+        toggleBtn.querySelector('span').textContent = '▶';
+      } else {
+        toggleBtn.querySelector('span').textContent = '◀';
+      }
+    });
+
+    // ---------- 全局状态 ----------
+    let currentStructure = 'FCC';
+    function refreshScene() {
+      const struct = structures[currentStructure];
+      drawCellFrame(struct);
+      drawAtoms(struct);
+      const h=parseInt(document.getElementById('planeH').value)||0;
+      const k=parseInt(document.getElementById('planeK').value)||0;
+      const l=parseInt(document.getElementById('planeL').value)||0;
+      updatePlane(h,k,l,struct);
+      const u=parseInt(document.getElementById('dirU').value)||0;
+      const v=parseInt(document.getElementById('dirV').value)||0;
+      const w=parseInt(document.getElementById('dirW').value)||0;
+      updateDirection(u,v,w,struct);
+    }
+
+    // UI事件
+    document.getElementById('structureSelect').addEventListener('change', e=>{
+      currentStructure=e.target.value;
+      const isHCP = currentStructure==='HCP';
+      document.getElementById('planeI').disabled=!isHCP;
+      document.getElementById('dirT').disabled=!isHCP;
+      if(!isHCP){ document.getElementById('planeI').value=0; document.getElementById('dirT').value=0; }
+      refreshScene();
+    });
+    function autoSetIandT(){
+      if(currentStructure==='HCP'){
+        const h=parseInt(document.getElementById('planeH').value)||0, k=parseInt(document.getElementById('planeK').value)||0;
+        document.getElementById('planeI').value = -(h+k);
+        const u=parseInt(document.getElementById('dirU').value)||0, v=parseInt(document.getElementById('dirV').value)||0;
+        document.getElementById('dirT').value = -(u+v);
+      }
+    }
+    ['planeH','planeK','dirU','dirV'].forEach(id=>document.getElementById(id).addEventListener('input',autoSetIandT));
+    document.getElementById('updateBtn').addEventListener('click', refreshScene);
+    document.querySelectorAll('.view-btn').forEach(b=>b.addEventListener('click', ()=>setView(b.dataset.view)));
+
+    window.addEventListener('resize', ()=>{
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // 启动
+    document.getElementById('planeI').disabled=true;
+    document.getElementById('dirT').disabled=true;
+    refreshScene();
+    setView('default');
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
